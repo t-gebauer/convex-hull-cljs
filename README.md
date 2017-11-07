@@ -5,7 +5,7 @@ Finds the convex hull of a list of points and calculates the area.
 
 ## Usage
 
-1. Open `index.html`
+1. Go to https://t-gebauer.github.com/convex-hull-cljs
 2. Drag and drop a text file onto the the application window
 
 The file should contain a list of points separated by white space, flattened.
@@ -18,6 +18,8 @@ The file should contain a list of points separated by white space, flattened.
 3 1
 0 4
 ```
+
+Suitable files can be found in (examples)[examples/].
 
 ## Development
 
