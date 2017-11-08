@@ -1,41 +1,10 @@
 (ns convex-hull-cljs.core
     (:require-macros [hiccups.core :as hiccups :refer [html]])
     (:require [hiccups.runtime :as hiccupsrt]
-              [clojure.string :as str]))
+              [clojure.string :as str]
+              [convex-hull-cljs.vector :as vec]))
 
 (enable-console-print!)
-
-(defonce state (atom {}))
-
-;;; vector functions
-
-(defn dot [[a b] [c d]]
-  (+ (* a c) (* b d)))
-
-(defn sub [[x0 y0] [x1 y1]]
-  [(- x0 x1) (- y0 y1)])
-
-(defn magnitude [[x y]]
-  (js/Math.sqrt (+ (* x x) (* y y))))
-
-(defn norm [v]
-  (let [m (magnitude v)
-        [x y] v]
-    [(/ x m) (/ y m)]))
-
-(defn angle [v w]
-  (let [dot (dot (norm v) (norm w))]
-    (if (> dot 1) 0 (js/Math.acos dot)))) ; in case of js/Math rounding error
-
-;;;
-
-(defn make-scaler [width height target-width target-height]
-  (let [ratio (/ width height)
-        target-ratio (/ target-width target-height)
-        scale (if (> ratio target-ratio)
-                (/ target-width width)
-                (/ target-height height))]
-    (fn [[x y]] [(* x scale) (* y scale)])))
 
 (defn convex-area [points]
   (->>
@@ -50,15 +19,14 @@
   (let [path-static (.getElementById js/document "hull-static")
         text (.getElementById js/document "area-text")
         total-length (.getTotalLength path-static)
-        total-duration 5
+        total-duration 4
         durations (->> hull-points
                        (#(partition 2 1 % %))
-                       (map (fn [[p1 p2]] (magnitude (sub p2 p1))))
+                       (map (fn [[p1 p2]] (vec/magnitude (vec/sub p2 p1))))
                        (map #(* total-duration (/ % total-length)))
                        vec)
         colors (atom ["#d81b60"  "#1e88e5"  "#7cb342" "#fb8c00" "#546e7a"])
-        ;["#d32f2f" "#c2185b" "#7b1fa2" "#512da8" "#303f9f" "#1976d2""#0288d1")
-        color (atom "transparent")
+        color (atom "transparent") ;; default: invisible path
         current (atom 0)
         anim-name (atom "dash")] ;; alternating animation name to restart css-anim
     (defn on-anim-tick [] ;; named function so that we can reference when we .setTimeout
@@ -82,30 +50,51 @@
                          (.setTimeout js/window on-anim-tick (* 1000 dur))))))
     (on-anim-tick)))
 
+;; generates a function to scale points
+(defn make-scale [width height target-width target-height]
+  (let [ratio (/ width height)
+        target-ratio (/ target-width target-height)
+        scale (if (> ratio target-ratio)
+                (/ target-width width)
+                (/ target-height height))]
+    (fn [[x y]] [(* x scale) (* y scale)])))
+
+;; generates a function which centers points
+(defn make-center [width height]
+  (let [ratio (/ width height)]
+    (if (= ratio 1) (fn [e] e)
+      (if (< ratio 1)
+        (let [dx (- (/ height 2) (/ width 2))]
+          (fn [[x y]] [(+ x dx) y]))
+        (let [dy (- (/ width 2) (/ height 2))]
+          (fn [[x y]] [x (+ y dy)]))))))
+
 ;; generate and display a svg highlighting the hull-points
 (defn render-svg [points width height hull-points]
   (let [root (.getElementById js/document "app")
         hull-area (convex-area hull-points)
         target-width 300
         target-height 300
-        border 10
+        border 15
         transf (comp (fn [[x y]] [x (- target-height y)]) ;; y-axis from bottom to top
-                     (make-scaler width height target-width target-height))
+                     (make-scale width height target-width target-height)
+                     (make-center width height))
         points (map transf points)
         hull-points (map transf hull-points)
         path-data (str "M" (str/join " L" (map (fn [[x y]] (str x " " y)) hull-points)) "Z")]
     (set! (.-innerHTML root)
       (html
        [:svg {:viewBox (str (- border) " " (- border) " "
-                            (+ target-width border) " "
-                            (+ target-height border))
+                            (+ target-width (* 2 border)) " "
+                            (+ target-height (* 2 border)))
               :preserveAspectRatio "xMidYMid meet"}
         (for [[x y] points]
-          [:circle {:cx x :cy y :r 2 :fill "#aaa"}])
-        [:path {:id "hull-static" :d path-data :stroke "transparent" :fill "transparent"}]
+          [:circle {:cx x :cy y :r 2 :fill "#999"}])
+        [:path {:id "hull-static" :d path-data
+                :stroke "transparent" :fill "transparent"}]
         (map-indexed (fn [i [p1 p2]]
                        (let [[x1 y1] p1 [x2 y2] p2
-                             len (magnitude (sub p2 p1))]
+                             len (vec/magnitude (vec/sub p2 p1))]
                          [:line {:x1 x1 :y1 y1 :x2 x2 :y2 y2
                                  :id (str "line" i)
                                  :style (str "stroke-dasharray:" len
@@ -119,7 +108,6 @@
                 :x (/ target-width 2) :y (/ target-height 2)
                 :fill "#ffd54f" :text-anchor "middle"} hull-area]]))
     (init-animation hull-points)))
-
 
 ;; get all min and max values in one loop
 (defn get-bounds [points]
@@ -143,8 +131,8 @@
     (let [[_ next] (->> points
                         (filter #(not= current %))
                         (map (fn [point]
-                               [(angle (sub prev current)
-                                       (sub point current))
+                               [(vec/angle (vec/sub prev current)
+                                       (vec/sub point current))
                                 point]))
                         (sort (comp - compare))
                         first)]
