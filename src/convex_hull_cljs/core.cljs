@@ -170,10 +170,28 @@
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
 
+;; xml request to request text...
+(defn xml-request [resource callback]
+  (let [xhr (new js/XMLHttpRequest)]
+    (aset xhr "responseType" "text")
+    (aset xhr "onload"
+          (fn [e]
+           (if (= (.-readyState xhr) 4)
+            (if (= (.-status xhr) 200)
+              (callback (.-responseText xhr))
+              (.error js/console (.-statusText xhr))))))
+    (aset xhr "onerror" #(.error js/console (.-statusText xhr)))
+    (.open xhr "GET" resource true)
+    (.send xhr nil)))
+
+(defn load-random []
+  (xml-request (str "examples/ex" (rand-nth (range 1 9))) on-text-read))
+
 ;; only add event listeners once (only relevant in devel)
 (defonce init
   (let [root (.getElementById js/document "app")]
     (.addEventListener root "dragover" handle-drag-over)
     (.addEventListener root "drop" handle-drop)
-    (set! (.-innerHTML root)
-          (html [:div.center-container [:p "drag a file here!"]]))))
+    ;; load random example
+    (.addEventListener root "click" load-random)
+    (load-random)))
