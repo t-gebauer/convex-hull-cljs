@@ -45,6 +45,11 @@ To create a production build run:
 
     lein do clean, cljsbuild once min
 
+!!! Warning !!!
+cljsbuilds advanced optimizations scramble path.getTotalLength() to something
+like b.sc() which generates an error...  
+Current solution: find that line in the output.js and change it back to.getTotalLength()
+
 And open your browser in `resources/public/index.html`. You will not
 get live reloading, nor a REPL.
 

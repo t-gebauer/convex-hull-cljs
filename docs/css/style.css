@@ -26,3 +26,6 @@ div#app {
 circle.highlight {
   fill: #0f0;
 }
+
+@keyframes dash {to {stroke-dashoffset: 0;}}
+@keyframes dash2 {to {stroke-dashoffset: 0;}}
