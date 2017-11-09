@@ -29,6 +29,8 @@
         color (atom "transparent") ;; default: invisible path
         current (atom 0)
         anim-name (atom "dash")] ;; alternating animation name to restart css-anim
+    (aset text "style" "transition" (str "fill " (* (/ total-duration 5) 3)
+                                         "s ease " (/ total-duration 5) "s"))
     (defn on-anim-tick [] ;; named function so that we can reference when we .setTimeout
       (let [dur (get durations @current)
             line (.getElementById js/document (str "line" @current))

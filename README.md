@@ -1,7 +1,7 @@
 # convex-hull-cljs
 
 Finds the convex hull of a list of points and calculates the area.  
-(Like [convex-hull](https://github.com/t-gebauer/convex-hull) but in Clojure)
+(Like [convex-hull [java]](https://github.com/t-gebauer/convex-hull) but in Clojure)
 
 ## Usage
 
@@ -44,11 +44,6 @@ To clean all compiled files:
 To create a production build run:
 
     lein do clean, cljsbuild once min
-
-!!! Warning !!!
-cljsbuilds advanced optimizations scramble path.getTotalLength() to something
-like b.sc() which generates an error...  
-Current solution: find that line in the output.js and change it back to.getTotalLength()
 
 And open your browser in `resources/public/index.html`. You will not
 get live reloading, nor a REPL.
