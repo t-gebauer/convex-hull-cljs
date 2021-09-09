@@ -5,7 +5,7 @@ Finds the convex hull of a list of points and calculates the area.
 
 ## Usage
 
-1. Go to https://t-gebauer.github.com/convex-hull-cljs
+1. Go to https://t-gebauer.github.io/convex-hull-cljs
 2. Load another set of points
     - Click on the window to load a new random file from examples folder
     - Or drag and drop a text file onto the application window
